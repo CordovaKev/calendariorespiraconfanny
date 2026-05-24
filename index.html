@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendario Respira con Fanny</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title> Respira con Fanny - Calendar</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -11,11 +11,9 @@
         :root {
             --brand: #0891b2; 
             --brand-hover: #164e63;
-            --brand-light: #cffafe;
-            --brand-text: #083344;
         }
         body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
-        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
@@ -25,138 +23,220 @@
             border: 3px solid rgba(8, 145, 178, 0.1);
             border-left-color: var(--brand);
             border-radius: 50%;
-            width: 24px; height: 24px;
+            width: 20px; height: 20px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* Panel Error */
-        #error-panel { display: none; }
+        
+        .color-picker-large {
+            -webkit-appearance: none; border: none; width: 100%; height: 48px;
+            border-radius: 0.5rem; cursor: pointer; padding: 0; overflow: hidden;
+        }
+        .color-picker-large::-webkit-color-swatch-wrapper { padding: 0; }
+        .color-picker-large::-webkit-color-swatch { border: none; border-radius: 0.5rem; }
+
+        /* Efecto hover en el logo */
+        .profile-pic-container:hover .profile-edit-overlay { opacity: 1; }
     </style>
 </head>
-<body class="flex h-screen text-slate-800">
+<body class="flex flex-col md:flex-row h-screen text-slate-800">
 
-    <!-- PANEL DE ERROR (Oculto por defecto) -->
-    <div id="error-panel" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative z-[100] w-[90%] max-w-2xl shadow-lg" role="alert">
+    <!-- PANEL DE ERROR -->
+    <div id="error-panel" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative z-[100] w-[90%] max-w-2xl shadow-lg hidden" role="alert">
         <strong class="font-bold">Aviso del Sistema:</strong>
         <span class="block sm:inline" id="error-message"></span>
-        <p class="text-sm mt-2 font-mono bg-white p-2 rounded text-red-900 border border-red-200" id="error-details"></p>
-        <button onclick="document.getElementById('error-panel').style.display='none'" class="absolute top-0 bottom-0 right-0 px-4 py-3">
+        <button onclick="document.getElementById('error-panel').classList.add('hidden')" class="absolute top-0 bottom-0 right-0 px-4 py-3">
             <i data-lucide="x" class="w-4 h-4 text-red-500"></i>
         </button>
     </div>
 
-    <!-- 1. BARRA LATERAL -->
-    <aside class="w-[280px] h-full bg-white border-r border-slate-200 fixed left-0 top-0 flex flex-col shadow-sm z-10">
-        <div class="p-8 flex flex-col items-center border-b border-slate-100">
-            <div class="w-32 h-32 rounded-full bg-slate-100 flex items-center justify-center mb-4 shadow-inner overflow-hidden border-4 border-white shadow-md relative">
+    <!-- CABECERA MÓVIL (Solo visible en celulares) -->
+    <div class="md:hidden flex justify-between items-center bg-white p-4 shadow-sm z-20 sticky top-0 border-b border-slate-200">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-100">
+                <img id="mobile-logo" src="Foto Final.jpg" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=F&background=random';">
+            </div>
+            <h1 class="text-sm font-bold text-slate-800">Respira con Fanny</h1>
+        </div>
+        <button onclick="toggleSidebar()" class="p-2 text-slate-600 hover:bg-slate-100 rounded-md">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+    </div>
+
+    <!-- OVERLAY DEL SIDEBAR MÓVIL -->
+    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden transition-opacity"></div>
+
+    <!-- 1. BARRA LATERAL (Responsive) -->
+    <aside id="sidebar" class="fixed md:relative w-72 md:w-[280px] h-full bg-white border-r border-slate-200 shadow-xl md:shadow-sm z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 flex flex-col flex-shrink-0">
+        <!-- Botón cerrar en móvil -->
+        <button onclick="toggleSidebar()" class="md:hidden absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-800">
+            <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+
+        <div class="p-8 flex flex-col items-center border-b border-slate-100 relative group profile-pic-container mt-4 md:mt-0">
+            <button onclick="openBrandModal()" class="profile-edit-overlay absolute top-10 right-10 bg-white p-2 rounded-full shadow-lg md:opacity-0 transition-opacity duration-200 text-slate-700 hover:text-[var(--brand)] z-20 cursor-pointer" title="Configurar Marca">
+                <i data-lucide="camera" class="w-4 h-4"></i>
+            </button>
+            <div class="w-28 h-28 md:w-32 md:h-32 rounded-full bg-slate-100 flex items-center justify-center mb-4 shadow-inner overflow-hidden border-4 border-white shadow-md cursor-pointer relative" onclick="openBrandModal()">
                 <img id="sidebar-logo" src="Foto Final.jpg" alt="Logo de Marca" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Fanny&background=random&size=128';">
+                <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <span class="text-white text-xs font-semibold">Editar</span>
+                </div>
             </div>
             <h1 class="text-xl font-bold text-slate-800 text-center">Respira con Fanny</h1>
-            <p class="text-xs text-slate-500 uppercase tracking-widest mt-1">Content Calendar</p>
+            <p class="text-[10px] md:text-xs text-slate-500 uppercase tracking-widest mt-1">Content Calendar</p>
             <div id="sync-status" class="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
-                <div class="spinner w-3 h-3 border-2"></div> Sincronizando BD...
+                <div class="spinner border-2"></div> Conectando BD...
             </div>
         </div>
 
-        <div class="p-6 flex-1 flex flex-col">
+        <div class="p-6 flex-1 flex flex-col overflow-hidden">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Pilares Estratégicos</h2>
+                <h2 class="text-xs md:text-sm font-semibold text-slate-400 uppercase tracking-wider">Pilares Estratégicos</h2>
             </div>
-            <ul id="sidebar-pillars" class="space-y-3 flex-1 overflow-y-auto"></ul>
+            <ul id="sidebar-pillars" class="space-y-3 flex-1 overflow-y-auto pr-2"></ul>
         </div>
     </aside>
 
     <!-- 2. ÁREA CENTRAL -->
-    <main class="h-full ml-[280px] flex-1 p-8 flex flex-col overflow-hidden">
-        <header class="flex justify-between items-center mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex-shrink-0">
+    <main class="flex-1 flex flex-col h-[calc(100vh-73px)] md:h-screen overflow-hidden p-3 md:p-8 bg-[#f8fafc]">
+        <header class="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-4 md:mb-8 bg-white p-4 md:p-6 rounded-xl md:rounded-2xl shadow-sm border border-slate-100 flex-shrink-0">
             <div>
-                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    <i data-lucide="calendar-days" style="color: var(--brand)"></i>
-                    Planificación <span id="current-year-display">2026</span>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="calendar-days" style="color: var(--brand)" class="w-5 h-5 md:w-6 md:h-6"></i>
+                    Planificación
                 </h2>
-                <p class="text-slate-500 text-sm mt-1">Sincronización en tiempo real habilitada.</p>
+                <p class="text-slate-500 text-xs md:text-sm mt-1">Sincronización en tiempo real habilitada.</p>
             </div>
-            <div class="flex items-center gap-4">
-                <select id="month-selector" class="bg-slate-50 border border-slate-300 text-slate-700 text-sm rounded-lg p-2.5 font-medium outline-none cursor-pointer min-w-[120px]"></select>
-                <select id="year-selector" class="bg-slate-50 border border-slate-300 text-slate-700 text-sm rounded-lg p-2.5 font-medium outline-none cursor-pointer">
+            <div class="flex items-center gap-2 md:gap-4 flex-wrap">
+                <select id="month-selector" class="bg-slate-50 border border-slate-300 text-slate-700 text-xs md:text-sm rounded-lg py-2 px-2 md:p-2.5 font-medium outline-none cursor-pointer flex-1 md:flex-none min-w-[100px]"></select>
+                <select id="year-selector" class="bg-slate-50 border border-slate-300 text-slate-700 text-xs md:text-sm rounded-lg py-2 px-2 md:p-2.5 font-medium outline-none cursor-pointer w-20 md:w-auto">
                     <option value="2026" selected>2026</option>
                     <option value="2027">2027</option>
                 </select>
-                <!-- Botón de prueba para ver si el JS funciona independiente de Firebase -->
-                <button onclick="alert('Espera a que cargue la base de datos...')" id="btn-nuevo-post" class="bg-slate-300 text-slate-500 cursor-not-allowed px-5 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm ml-2">
-                    <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Cargando
+                <button id="btn-nuevo-post" onclick="openNewPostPanel()" class="bg-[#0891b2] hover:bg-[#164e63] text-white px-3 md:px-5 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-medium transition-colors flex items-center gap-1.5 md:gap-2 shadow-sm w-full md:w-auto justify-center mt-2 md:mt-0">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Post
                 </button>
             </div>
         </header>
 
         <!-- VISTA: CALENDARIO -->
-        <div id="view-calendar-container" class="flex-1 flex flex-col overflow-hidden fade-in">
-            <div class="grid grid-cols-7 gap-3 mb-2 text-center flex-shrink-0">
-                <div class="font-semibold text-slate-400 text-xs uppercase tracking-wide">Dom</div>
-                <div class="font-semibold text-slate-400 text-xs uppercase tracking-wide">Lun</div>
-                <div class="font-semibold text-slate-400 text-xs uppercase tracking-wide">Mar</div>
-                <div class="font-semibold text-slate-400 text-xs uppercase tracking-wide">Mié</div>
-                <div class="font-semibold text-slate-400 text-xs uppercase tracking-wide">Jue</div>
-                <div class="font-semibold text-slate-400 text-xs uppercase tracking-wide">Vie</div>
-                <div class="font-semibold text-slate-400 text-xs uppercase tracking-wide">Sáb</div>
+        <div id="view-calendar-container" class="flex-1 flex flex-col overflow-hidden bg-white p-2 md:p-4 rounded-xl md:rounded-2xl shadow-sm border border-slate-100 fade-in">
+            <!-- Días de la semana -->
+            <div class="grid grid-cols-7 gap-1 md:gap-3 mb-2 text-center flex-shrink-0">
+                <div class="font-semibold text-slate-400 text-[9px] md:text-xs uppercase tracking-tight md:tracking-wide">Dom</div>
+                <div class="font-semibold text-slate-400 text-[9px] md:text-xs uppercase tracking-tight md:tracking-wide">Lun</div>
+                <div class="font-semibold text-slate-400 text-[9px] md:text-xs uppercase tracking-tight md:tracking-wide">Mar</div>
+                <div class="font-semibold text-slate-400 text-[9px] md:text-xs uppercase tracking-tight md:tracking-wide">Mié</div>
+                <div class="font-semibold text-slate-400 text-[9px] md:text-xs uppercase tracking-tight md:tracking-wide">Jue</div>
+                <div class="font-semibold text-slate-400 text-[9px] md:text-xs uppercase tracking-tight md:tracking-wide">Vie</div>
+                <div class="font-semibold text-slate-400 text-[9px] md:text-xs uppercase tracking-tight md:tracking-wide">Sáb</div>
             </div>
-            <div id="calendar-grid" class="grid grid-cols-7 gap-3 flex-1 overflow-y-auto pb-8 pr-2"></div>
+            <!-- Cuadrícula -->
+            <div id="calendar-grid" class="grid grid-cols-7 gap-1 md:gap-3 flex-1 overflow-y-auto pb-4 pr-1"></div>
         </div>
     </main>
 
-    <!-- PANEL LATERAL (POSTS) -->
-    <div id="side-panel" class="fixed top-0 right-0 w-[450px] h-full bg-white shadow-2xl border-l border-slate-200 transform translate-x-[100%] transition-transform duration-300 ease-in-out z-50 flex flex-col">
-        <div class="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50">
-            <h3 id="panel-main-title" class="text-lg font-bold text-slate-800">Nueva Publicación</h3>
+    <!-- PANEL LATERAL (EDICIÓN DE POSTS) -->
+    <div id="side-panel" class="fixed top-0 right-0 w-full md:w-[450px] h-full bg-white shadow-2xl border-l border-slate-200 transform translate-x-full transition-transform duration-300 ease-in-out z-[60] flex flex-col">
+        <div class="flex justify-between items-center p-4 md:p-6 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+            <h3 id="panel-main-title" class="text-base md:text-lg font-bold text-slate-800">Nueva Publicación</h3>
             <button onclick="closePanel()" class="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-200 rounded-full transition-colors"><i data-lucide="x"></i></button>
         </div>
-        <!-- MODO EDICIÓN / NUEVO -->
-        <div id="panel-edit" class="p-6 flex-1 overflow-y-auto space-y-4 bg-white">
+        
+        <div id="panel-edit" class="p-4 md:p-6 flex-1 overflow-y-auto space-y-4 md:space-y-5 bg-white pb-24 md:pb-6">
             <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Título del Post</label>
-                <input type="text" id="edit-title" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-slate-800 text-sm outline-none">
+                <label class="block text-[10px] md:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Título del Post</label>
+                <input type="text" id="edit-title" placeholder="Ej: Mitos sobre el asma" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 md:px-4 py-2 md:py-2.5 text-slate-800 text-xs md:text-sm outline-none focus:ring-2 focus:ring-[var(--brand)]">
             </div>
-            <div class="flex gap-4">
+            <div class="flex flex-col md:flex-row gap-4">
                 <div class="flex-1">
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Fecha</label>
-                    <input type="date" id="edit-date" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-slate-800 text-sm outline-none">
+                    <label class="block text-[10px] md:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Fecha</label>
+                    <input type="date" id="edit-date" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 md:px-4 py-2 md:py-2.5 text-slate-800 text-xs md:text-sm outline-none focus:ring-2 focus:ring-[var(--brand)]">
                 </div>
                 <div class="flex-1">
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Formato</label>
-                    <select id="edit-format" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-slate-800 text-sm outline-none">
+                    <label class="block text-[10px] md:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Formato</label>
+                    <select id="edit-format" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 md:px-4 py-2 md:py-2.5 text-slate-800 text-xs md:text-sm outline-none focus:ring-2 focus:ring-[var(--brand)]">
                         <option value="🎥 Reel">🎥 Reel</option>
                         <option value="🖼️ Post">🖼️ Post</option>
                         <option value="⏳ Story">⏳ Story</option>
                         <option value="🎠 Carrusel">🎠 Carrusel</option>
+                        <option value="🎙️ Podcast">🎙️ Podcast</option>
                     </select>
                 </div>
             </div>
             <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Pilar</label>
-                <select id="edit-pillar" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-slate-800 text-sm outline-none"></select>
+                <label class="block text-[10px] md:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Pilar Estratégico</label>
+                <select id="edit-pillar" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 md:px-4 py-2 md:py-2.5 text-slate-800 text-xs md:text-sm outline-none focus:ring-2 focus:ring-[var(--brand)]"></select>
             </div>
             <div class="flex flex-col">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Copy / Texto</label>
-                <textarea id="edit-copy" rows="8" class="w-full flex-1 bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 text-slate-800 text-sm outline-none resize-none"></textarea>
+                <label class="block text-[10px] md:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Copy / Texto principal</label>
+                <textarea id="edit-copy" rows="5" placeholder="Escribe el contenido aquí..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 md:px-4 py-2 md:py-3 text-slate-800 text-xs md:text-sm outline-none resize-none focus:ring-2 focus:ring-[var(--brand)]"></textarea>
             </div>
-            <div class="pt-4 border-t border-slate-100 flex gap-3">
-                <button onclick="savePost()" class="flex-1 bg-[#0891b2] hover:bg-[#164e63] text-white py-2.5 rounded-lg text-sm font-medium transition-colors flex justify-center items-center gap-2">
-                    <i data-lucide="save" class="w-4 h-4"></i> Guardar en la Nube
-                </button>
+            <!-- SECCIÓN NUEVA: NOTAS Y REFERENCIAS -->
+            <div class="flex flex-col">
+                <label class="block text-[10px] md:text-xs font-semibold text-yellow-600 uppercase tracking-wider mb-1">Comentarios / Notas (Interno)</label>
+                <textarea id="edit-notes" rows="3" placeholder="Links de inspiración, indicaciones para edición, etc." class="w-full bg-yellow-50 border border-yellow-300 rounded-lg px-3 md:px-4 py-2 md:py-3 text-yellow-900 text-xs md:text-sm outline-none resize-none focus:ring-2 focus:ring-yellow-500 placeholder-yellow-600/50"></textarea>
+            </div>
+        </div>
+        
+        <!-- Botones fijos al final -->
+        <div class="p-4 md:p-6 border-t border-slate-100 bg-white flex gap-3 flex-shrink-0 absolute bottom-0 left-0 w-full md:relative">
+            <button onclick="savePost()" class="flex-1 bg-[#0891b2] hover:bg-[#164e63] text-white py-2.5 md:py-3 rounded-lg text-sm font-medium transition-colors flex justify-center items-center gap-2 shadow-sm" style="background-color: var(--brand);">
+                <i data-lucide="save" class="w-4 h-4"></i> Guardar
+            </button>
+            <button id="btn-delete-post" onclick="deletePost()" class="hidden bg-white border border-red-200 text-red-600 hover:bg-red-50 py-2.5 md:py-3 px-4 rounded-lg text-sm font-medium transition-colors justify-center items-center" title="Eliminar Publicación">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIGURACIÓN DE MARCA -->
+    <div id="brand-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[70] hidden flex justify-center items-center opacity-0 transition-opacity duration-300 px-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform scale-95 transition-transform duration-300" id="brand-modal-content">
+            <div class="flex justify-between items-center p-4 md:p-6 border-b border-slate-100">
+                <h3 class="text-base md:text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="palette" style="color: var(--brand)"></i> Marca Personal
+                </h3>
+                <button onclick="closeBrandModal()" class="text-slate-400 hover:text-slate-800 transition-colors"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-4 md:p-6 space-y-6">
+                <!-- Subir Logo -->
+                <div>
+                    <label class="block text-[10px] md:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Foto de Perfil / Logo</label>
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-full border border-slate-200 overflow-hidden shadow-sm flex-shrink-0 bg-slate-100">
+                            <img id="brand-preview-logo" src="Foto Final.jpg" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-1">
+                            <label for="brand-upload-input" class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 px-4 rounded-lg text-xs font-medium transition-colors border border-slate-200 block text-center w-full">
+                                Cambiar foto...
+                            </label>
+                            <input type="file" id="brand-upload-input" accept="image/*" class="hidden" onchange="handleLogoUpload(event)">
+                            <p class="text-[9px] md:text-[10px] text-slate-400 mt-1 text-center">Recomendado: JPG ligero (Max 1MB).</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Color Principal -->
+                <div>
+                    <label class="block text-[10px] md:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Color Principal de Interfaz</label>
+                    <input type="color" id="brand-color-input" value="#0891b2" class="color-picker-large border border-slate-200 shadow-sm" onchange="previewBrandColor(this.value)">
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-100 flex gap-3 bg-slate-50">
+                <button onclick="closeBrandModal()" class="flex-1 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 py-2.5 rounded-lg text-xs md:text-sm font-medium transition-colors">Cancelar</button>
+                <button onclick="saveBrandSettings()" class="flex-1 text-white py-2.5 rounded-lg text-xs md:text-sm font-medium transition-colors shadow-sm" style="background-color: var(--brand);">Guardar Marca</button>
             </div>
         </div>
     </div>
-    <div id="panel-overlay" class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300" onclick="closePanel()"></div>
 
-    <!-- Firebase SDK (Módulos JS) - Con fallback automático -->
+    <div id="panel-overlay" class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300" onclick="closePanel()"></div>
+
+    <!-- Firebase SDK (Módulos JS) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ==========================================
-        // CONFIGURACIÓN OFICIAL DE KEV
-        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyAFBBNcRdK6wI0bOdb6PywJ275SV9uI7XU",
             authDomain: "calendar-rcf.firebaseapp.com",
@@ -165,77 +245,59 @@
             messagingSenderId: "611172144830",
             appId: "1:611172144830:web:094c7e5f52b4c9d05df0ef"
         };
-        // ==========================================
 
         const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-        function showError(msg, details) {
-            console.error("ERROR DETECTADO:", msg, details);
+        function showError(msg) {
             const panel = document.getElementById('error-panel');
             document.getElementById('error-message').innerText = msg;
-            document.getElementById('error-details').innerText = details;
-            panel.style.display = 'block';
-            
-            const status = document.getElementById('sync-status');
-            status.innerHTML = `<i data-lucide="x-circle" class="w-3 h-3 text-red-500"></i> Fallo general de DB`;
-            status.classList.add('text-red-600');
-            lucide.createIcons();
+            panel.classList.remove('hidden');
+            setTimeout(() => panel.classList.add('hidden'), 5000); // Ocultar después de 5 seg
         }
 
         try {
-            // Inicializar servicios
             const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
             const db = getFirestore(app);
             
-            // Rutas recomendadas para asegurar total estabilidad de la BD
-            const basePath = ['artifacts', 'calendar-rcf', 'public', 'data'];
-            const postsRef = collection(db, ...basePath, 'posts');
-            const pillarsRef = collection(db, ...basePath, 'pillars');
+            const postsRef = collection(db, 'fanny_posts');
+            const pillarsRef = collection(db, 'fanny_pillars');
+            const settingsRef = doc(db, 'fanny_settings', 'brand');
 
-            window.appState = { pillars: [], posts: [], currentEditingId: null };
+            window.appState = { 
+                pillars: [], 
+                posts: [], 
+                brand: { logoBase64: 'Foto Final.jpg', mainColor: '#0891b2' },
+                currentEditingId: null 
+            };
             window.db = db; 
 
-            async function iniciarSistema() {
-                try {
-                    // Intenta conectar a Auth. Si falla por caché o demoras de Google,
-                    // el sistema lo atrapa y continúa conectando la Base de Datos directamente.
-                    await signInAnonymously(auth);
-                } catch (authError) {
-                    console.warn("Aviso: El módulo de Autenticación aún se está configurando en Google. Conectando a Base de Datos directa vía Reglas.");
+            // 1. Escuchar Configuración de Marca
+            onSnapshot(settingsRef, (docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    const data = docSnapshot.data();
+                    window.appState.brand.logoBase64 = data.logoBase64 || window.appState.brand.logoBase64;
+                    window.appState.brand.mainColor = data.mainColor || window.appState.brand.mainColor;
+                    applyBrandSettings(window.appState.brand.mainColor, window.appState.brand.logoBase64);
                 }
+            });
 
-                // 1. Escuchar Pilares 
-                onSnapshot(pillarsRef, (snapshot) => {
-                    window.appState.pillars = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    if(window.appState.pillars.length === 0) seedDefaultPillars();
-                    renderSidebar();
-                }, (error) => showError("No se pudieron leer los pilares", error.message));
+            // 2. Escuchar Pilares
+            onSnapshot(pillarsRef, (snapshot) => {
+                window.appState.pillars = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if(window.appState.pillars.length === 0) seedDefaultPillars();
+                renderSidebar();
+            });
 
-                // 2. Escuchar Posts y Activar Interfaz
-                onSnapshot(postsRef, (snapshot) => {
-                    window.appState.posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    renderCalendar();
-                    
-                    // Actualizar UI a éxito
-                    const status = document.getElementById('sync-status');
-                    status.innerHTML = `<i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-500"></i> Conectado y Sincronizado`;
-                    status.classList.remove('text-red-600', 'text-slate-400');
-                    status.classList.add('text-emerald-600');
-                    lucide.createIcons();
-                    
-                    // Activar el botón de Nuevo Post
-                    const btn = document.getElementById('btn-nuevo-post');
-                    btn.className = "bg-[#0891b2] hover:bg-[#164e63] text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm ml-2 cursor-pointer";
-                    btn.innerHTML = `<i data-lucide="plus" class="w-4 h-4"></i> Nuevo Post`;
-                    btn.onclick = () => openNewPostPanel();
-                    lucide.createIcons();
-                    
-                }, (error) => showError("No se pudieron leer las publicaciones", error.message));
-            }
-
-            // Ejecutar el motor
-            iniciarSistema();
+            // 3. Escuchar Posts
+            onSnapshot(postsRef, (snapshot) => {
+                window.appState.posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderCalendar();
+                
+                const status = document.getElementById('sync-status');
+                status.innerHTML = `<i data-lucide="check-circle-2" class="w-3 h-3 md:w-4 md:h-4 text-emerald-500"></i> Conectado`;
+                status.classList.add('text-emerald-600');
+                lucide.createIcons();
+            });
 
             async function seedDefaultPillars() {
                 const defaults = [
@@ -243,18 +305,105 @@
                     { id: 'pil_2', name: 'Educación', color: '#3B82F6' },
                     { id: 'pil_3', name: 'Performance', color: '#A855F7' }
                 ];
-                try {
-                    for (let p of defaults) {
-                        await setDoc(doc(db, ...basePath, 'pillars', p.id), { name: p.name, color: p.color });
-                    }
-                } catch(e) { console.error("Error creando pilares", e.message); }
+                for (let p of defaults) {
+                    await setDoc(doc(db, 'fanny_pillars', p.id), { name: p.name, color: p.color });
+                }
             }
 
         } catch (e) {
-            showError("Error Crítico al inicializar la App.", e.message);
+            console.error("Error BD:", e);
+            showError("Error conectando a la BD. " + e.message);
         }
 
-        // --- FUNCIONES DE UI ---
+        // --- MANEJO DE MARCA (BRAND) ---
+        let tempBrandColor = '#0891b2';
+        let tempLogoBase64 = null;
+
+        function adjustColor(color, amount) {
+            return '#' + color.replace(/^#/, '').replace(/../g, color => ('0'+Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2));
+        }
+
+        window.applyBrandSettings = function(color, logo) {
+            document.documentElement.style.setProperty('--brand', color);
+            document.documentElement.style.setProperty('--brand-hover', adjustColor(color, -20));
+            document.getElementById('sidebar-logo').src = logo;
+            document.getElementById('mobile-logo').src = logo;
+            document.getElementById('brand-preview-logo').src = logo;
+            document.getElementById('brand-color-input').value = color;
+        }
+
+        window.openBrandModal = function() {
+            if(window.innerWidth < 768) toggleSidebar(); // Cerrar menú móvil al abrir
+            tempBrandColor = window.appState.brand.mainColor;
+            tempLogoBase64 = window.appState.brand.logoBase64;
+            document.getElementById('brand-color-input').value = tempBrandColor;
+            
+            const bModal = document.getElementById('brand-modal');
+            const bContent = document.getElementById('brand-modal-content');
+            bModal.classList.remove('hidden');
+            setTimeout(() => {
+                bModal.classList.remove('opacity-0');
+                bContent.classList.remove('scale-95');
+            }, 10);
+        }
+
+        window.closeBrandModal = function() {
+            applyBrandSettings(window.appState.brand.mainColor, window.appState.brand.logoBase64); // Revertir
+            const bModal = document.getElementById('brand-modal');
+            const bContent = document.getElementById('brand-modal-content');
+            bModal.classList.add('opacity-0');
+            bContent.classList.add('scale-95');
+            setTimeout(() => bModal.classList.add('hidden'), 300);
+        }
+
+        window.handleLogoUpload = function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if(file.size > 1000000) { // 1MB limite para Firestore
+                    alert("La imagen es muy pesada (máximo 1MB). Por favor, comprime la foto antes de subirla.");
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    tempLogoBase64 = e.target.result;
+                    document.getElementById('brand-preview-logo').src = tempLogoBase64;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        window.previewBrandColor = function(color) {
+            tempBrandColor = color;
+            applyBrandSettings(color, tempLogoBase64 || window.appState.brand.logoBase64);
+        }
+
+        window.saveBrandSettings = async function() {
+            try {
+                await setDoc(doc(window.db, 'fanny_settings', 'brand'), {
+                    logoBase64: tempLogoBase64 || window.appState.brand.logoBase64,
+                    mainColor: tempBrandColor
+                });
+                closeBrandModal();
+            } catch (e) {
+                showError("No se pudo guardar la marca. " + e.message);
+            }
+        }
+
+        // --- MENU MOVIL ---
+        window.toggleSidebar = function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            if(overlay.classList.contains('hidden')) {
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+            } else {
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+
+        // --- FUNCIONES DE UI (Calendario) ---
         function initMonthSelector() {
             const select = document.getElementById('month-selector');
             select.innerHTML = '';
@@ -263,22 +412,21 @@
                 opt.value = index; opt.text = mes;
                 select.appendChild(opt);
             });
-            select.value = "5"; // Junio por defecto
+            select.value = "5"; // Junio
             select.addEventListener('change', renderCalendar);
             document.getElementById('year-selector').addEventListener('change', renderCalendar);
         }
 
         window.renderSidebar = function() {
             const list = document.getElementById('sidebar-pillars');
-            list.innerHTML = '';
             const select = document.getElementById('edit-pillar');
-            select.innerHTML = '';
+            list.innerHTML = ''; select.innerHTML = '';
             
             window.appState.pillars.forEach(pillar => {
                 list.innerHTML += `
-                    <li class="flex items-center gap-3 fade-in">
-                        <span class="w-4 h-4 rounded-full shadow-sm" style="background-color: ${pillar.color}"></span>
-                        <span class="font-medium text-slate-700 text-sm">${pillar.name}</span>
+                    <li class="flex items-center gap-2 md:gap-3 fade-in">
+                        <span class="w-3 h-3 md:w-4 md:h-4 rounded-full shadow-sm flex-shrink-0" style="background-color: ${pillar.color}"></span>
+                        <span class="font-medium text-slate-700 text-xs md:text-sm line-clamp-1">${pillar.name}</span>
                     </li>
                 `;
                 select.innerHTML += `<option value="${pillar.id}">${pillar.name}</option>`;
@@ -291,8 +439,7 @@
             var r = parseInt(hexcolor.substr(0,2),16);
             var g = parseInt(hexcolor.substr(2,2),16);
             var b = parseInt(hexcolor.substr(4,2),16);
-            var yiq = ((r*299)+(g*587)+(b*114))/1000;
-            return (yiq >= 128) ? 'text-slate-800' : 'text-white';
+            return (((r*299)+(g*587)+(b*114))/1000 >= 128) ? 'text-slate-800' : 'text-white';
         }
 
         window.renderCalendar = function() {
@@ -307,7 +454,7 @@
             const totalDays = lastDay.getDate();
 
             for (let i = 0; i < startDayIndex; i++) {
-                calendarGrid.innerHTML += `<div class="bg-transparent rounded-xl border border-dashed border-slate-200 min-h-[140px] opacity-50"></div>`;
+                calendarGrid.innerHTML += `<div class="bg-transparent rounded-lg md:rounded-xl border border-dashed border-slate-200 min-h-[70px] md:min-h-[140px] opacity-50"></div>`;
             }
 
             for (let day = 1; day <= totalDays; day++) {
@@ -315,39 +462,45 @@
                 const dayPosts = window.appState.posts.filter(p => p.date === currentDateStr);
 
                 const cell = document.createElement('div');
-                cell.className = `relative min-h-[140px] bg-white border border-slate-200 rounded-xl p-2 transition-all flex flex-col hover:border-[#0891b2] group`;
+                // Estructura responsive: menos padding y altura en movil
+                cell.className = `relative min-h-[70px] md:min-h-[140px] bg-slate-50 md:bg-white border border-slate-200 rounded-lg md:rounded-xl p-1 md:p-2 transition-all flex flex-col hover:border-[var(--brand)] group overflow-hidden`;
                 
                 cell.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="font-semibold text-slate-500 text-sm">${day}</span>
-                        <button onclick="openNewPostPanel('${currentDateStr}')" class="opacity-0 group-hover:opacity-100 text-[#0891b2] hover:bg-[#cffafe] p-1 rounded transition-all" title="Añadir Post en este día">
-                            <i data-lucide="plus" class="w-4 h-4"></i>
+                    <div class="flex justify-between items-start mb-1 md:mb-2">
+                        <span class="font-bold md:font-semibold text-slate-500 text-[10px] md:text-sm leading-none pl-0.5 pt-0.5">${day}</span>
+                        <button onclick="openNewPostPanel('${currentDateStr}')" class="opacity-0 group-hover:opacity-100 text-[var(--brand)] hover:bg-[var(--brand-light)] p-0.5 md:p-1 rounded transition-all hidden md:block" title="Añadir Post">
+                            <i data-lucide="plus" class="w-3 h-3 md:w-4 md:h-4"></i>
                         </button>
                     </div>
                 `;
 
                 const postsContainer = document.createElement('div');
-                postsContainer.className = 'flex flex-col gap-2 flex-1';
+                postsContainer.className = 'flex flex-col gap-1 md:gap-2 flex-1';
 
                 dayPosts.forEach(post => {
                     const pillar = window.appState.pillars.find(p => p.id === post.pillarId) || {color: '#94a3b8'};
                     const textColor = getContrastYIQ(pillar.color);
                     
                     const postEl = document.createElement('div');
-                    postEl.className = 'cursor-pointer rounded-lg p-2.5 shadow-sm border border-black/5 hover:-translate-y-0.5 transition-transform fade-in';
+                    // Textos y paddings hiper reducidos para móvil, normales para escritorio
+                    postEl.className = 'cursor-pointer rounded md:rounded-lg p-1 md:p-2.5 shadow-sm border border-black/5 hover:-translate-y-0.5 transition-transform fade-in';
                     postEl.style.backgroundColor = pillar.color;
-                    
-                    // Al hacer clic, editaremos
                     postEl.onclick = () => openEditPostPanel(post.id);
 
                     postEl.innerHTML = `
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-sm bg-black/10 ${textColor}">${post.format}</span>
+                        <div class="flex items-center justify-between mb-0.5 md:mb-1">
+                            <span class="text-[7px] md:text-[10px] uppercase font-bold px-1 md:px-1.5 py-0 md:py-0.5 rounded-sm bg-black/10 ${textColor} truncate max-w-full">${post.format}</span>
                         </div>
-                        <p class="text-xs font-semibold leading-tight line-clamp-2 ${textColor}">${post.title}</p>
+                        <p class="text-[8px] md:text-xs font-semibold leading-tight line-clamp-1 md:line-clamp-2 ${textColor}">${post.title}</p>
                     `;
                     postsContainer.appendChild(postEl);
                 });
+
+                // En móvil, si haces clic en la celda vacía, abres nuevo post
+                if(window.innerWidth < 768 && dayPosts.length === 0) {
+                    cell.onclick = () => openNewPostPanel(currentDateStr);
+                    cell.classList.add('cursor-pointer');
+                }
 
                 cell.appendChild(postsContainer);
                 calendarGrid.appendChild(cell);
@@ -355,7 +508,18 @@
             lucide.createIcons();
         }
 
-        // --- PANEL CONTROL ---
+        // Manejar redimensiones para ajustar eventos
+        window.addEventListener('resize', () => {
+            if(window.innerWidth >= 768) {
+                document.getElementById('sidebar-overlay').classList.add('hidden');
+                document.getElementById('sidebar').classList.remove('-translate-x-full');
+            } else {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+            }
+            renderCalendar(); // Re-render para reasignar clics responsivos
+        });
+
+        // --- PANEL CONTROL (Posts) ---
         const sidePanel = document.getElementById('side-panel');
         const panelOverlay = document.getElementById('panel-overlay');
 
@@ -368,8 +532,12 @@
             document.getElementById('edit-title').value = '';
             document.getElementById('edit-date').value = prefilledDate || `${ySelect}-${String(parseInt(mSelect)+1).padStart(2,'0')}-01`;
             document.getElementById('edit-copy').value = '';
+            document.getElementById('edit-notes').value = ''; // Limpiar notas
             
-            sidePanel.classList.remove('translate-x-[100%]');
+            document.getElementById('btn-delete-post').classList.add('hidden');
+            document.getElementById('btn-delete-post').classList.remove('flex');
+
+            sidePanel.classList.remove('translate-x-full');
             panelOverlay.classList.remove('hidden');
             setTimeout(() => panelOverlay.classList.remove('opacity-0'), 10);
         }
@@ -384,38 +552,53 @@
             document.getElementById('edit-format').value = post.format;
             document.getElementById('edit-pillar').value = post.pillarId;
             document.getElementById('edit-copy').value = post.copy || '';
+            document.getElementById('edit-notes').value = post.notes || ''; // Cargar notas
             
-            sidePanel.classList.remove('translate-x-[100%]');
+            document.getElementById('btn-delete-post').classList.remove('hidden');
+            document.getElementById('btn-delete-post').classList.add('flex');
+
+            sidePanel.classList.remove('translate-x-full');
             panelOverlay.classList.remove('hidden');
             setTimeout(() => panelOverlay.classList.remove('opacity-0'), 10);
         }
 
         window.closePanel = function() {
-            sidePanel.classList.add('translate-x-[100%]');
+            sidePanel.classList.add('translate-x-full');
             panelOverlay.classList.add('opacity-0');
             setTimeout(() => panelOverlay.classList.add('hidden'), 300);
             window.appState.currentEditingId = null;
         }
 
-        // --- GUARDAR EN FIREBASE ---
+        // --- GUARDAR Y ELIMINAR ---
         window.savePost = async function() {
             const title = document.getElementById('edit-title').value.trim();
             const date = document.getElementById('edit-date').value;
             const format = document.getElementById('edit-format').value;
             const pillarId = document.getElementById('edit-pillar').value;
             const copy = document.getElementById('edit-copy').value.trim();
+            const notes = document.getElementById('edit-notes').value.trim(); // Obtener notas
 
             if (!title || !date) return alert("Ingresa un título y una fecha.");
 
-            // Si existe currentEditingId lo usamos (edición), si no creamos nuevo
             const postId = window.appState.currentEditingId || ('post_' + Date.now());
             
             try {
-                const basePath = ['artifacts', 'calendar-rcf', 'public', 'data'];
-                await setDoc(doc(window.db, ...basePath, 'posts', postId), { title, date, format, pillarId, copy });
+                await setDoc(doc(window.db, 'fanny_posts', postId), { title, date, format, pillarId, copy, notes });
                 closePanel();
             } catch (e) {
-                showError("No se pudo guardar la publicación", e.message);
+                showError("No se pudo guardar: " + e.message);
+            }
+        }
+
+        window.deletePost = async function() {
+            if(!window.appState.currentEditingId) return;
+            if(confirm("¿Estás seguro de que deseas eliminar este post?")) {
+                try {
+                    await deleteDoc(doc(window.db, 'fanny_posts', window.appState.currentEditingId));
+                    closePanel();
+                } catch(e) {
+                    showError("No se pudo eliminar: " + e.message);
+                }
             }
         }
 
