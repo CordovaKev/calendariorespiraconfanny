@@ -54,7 +54,7 @@
             <h1 class="text-xl font-bold text-slate-800 text-center">Respira con Fanny</h1>
             <p class="text-xs text-slate-500 uppercase tracking-widest mt-1">Content Calendar</p>
             <div id="sync-status" class="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
-                <div class="spinner w-3 h-3 border-2"></div> Conectando...
+                <div class="spinner w-3 h-3 border-2"></div> Conectando directo...
             </div>
         </div>
 
@@ -83,7 +83,7 @@
                     <option value="2027">2027</option>
                 </select>
                 <!-- Botón de prueba para ver si el JS funciona independiente de Firebase -->
-                <button onclick="alert('El botón funciona. Esperando a Firebase...')" id="btn-nuevo-post" class="bg-[#0891b2] hover:bg-[#164e63] text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm ml-2">
+                <button onclick="alert('Conectando a base de datos... un momento')" id="btn-nuevo-post" class="bg-[#0891b2] hover:bg-[#164e63] text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm ml-2">
                     <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Post
                 </button>
             </div>
@@ -147,14 +147,14 @@
     </div>
     <div id="panel-overlay" class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300" onclick="closePanel()"></div>
 
-    <!-- Firebase SDK (Módulos JS) -->
+    <!-- Firebase SDK (Módulos JS) - SIN AUTH -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // Eliminamos firebase-auth porque nos conectaremos directo a Firestore
         import { getFirestore, collection, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ==========================================
-        // CONFIGURACIÓN DE KEV (ACTUALIZADA)
+        // CONFIGURACIÓN DE KEV
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyAFBBNcRdK6wI0bOdb6PywJ275SV9uI7XU",
@@ -168,7 +168,6 @@
 
         const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-        // Utilidad para mostrar errores en pantalla
         function showError(msg, details) {
             console.error("ERROR DETECTADO:", msg, details);
             const panel = document.getElementById('error-panel');
@@ -184,48 +183,40 @@
 
         try {
             const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
             const db = getFirestore(app);
             
-            // Usaremos una ruta simple para evitar problemas de permisos de la versión anterior
             const postsRef = collection(db, 'fanny_posts');
             const pillarsRef = collection(db, 'fanny_pillars');
 
             window.appState = { pillars: [], posts: [], currentEditingId: null };
-            window.db = db; // Guardar db global para la función savePost
+            window.db = db; 
 
-            // 1. Iniciar Sesión Anónima
-            signInAnonymously(auth).then(() => {
-                console.log("Autenticación exitosa");
+            console.log("Conectando directo a Firestore sin Auth...");
+            
+            // 1. Escuchar Pilares Directamente
+            onSnapshot(pillarsRef, (snapshot) => {
+                window.appState.pillars = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if(window.appState.pillars.length === 0) seedDefaultPillars();
+                renderSidebar();
+            }, (error) => showError("No se pudieron leer los pilares", error.message));
+
+            // 2. Escuchar Posts Directamente
+            onSnapshot(postsRef, (snapshot) => {
+                window.appState.posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderCalendar();
                 
-                // 2. Escuchar Pilares
-                onSnapshot(pillarsRef, (snapshot) => {
-                    window.appState.pillars = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    if(window.appState.pillars.length === 0) seedDefaultPillars();
-                    renderSidebar();
-                }, (error) => showError("No se pudieron leer los pilares", error.message));
-
-                // 3. Escuchar Posts
-                onSnapshot(postsRef, (snapshot) => {
-                    window.appState.posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    renderCalendar();
-                    
-                    // Actualizar UI a éxito
-                    const status = document.getElementById('sync-status');
-                    status.innerHTML = `<i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-500"></i> Conectado`;
-                    status.classList.remove('text-red-600');
-                    status.classList.add('text-emerald-600');
-                    lucide.createIcons();
-                    
-                    // Activar el botón de Nuevo Post
-                    const btn = document.getElementById('btn-nuevo-post');
-                    btn.onclick = () => openNewPostPanel();
-                    
-                }, (error) => showError("No se pudieron leer las publicaciones", error.message));
-
-            }).catch((error) => {
-                showError("Falló la autenticación con Firebase", error.message);
-            });
+                // Actualizar UI a éxito
+                const status = document.getElementById('sync-status');
+                status.innerHTML = `<i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-500"></i> Conectado`;
+                status.classList.remove('text-red-600');
+                status.classList.add('text-emerald-600');
+                lucide.createIcons();
+                
+                // Activar el botón de Nuevo Post
+                const btn = document.getElementById('btn-nuevo-post');
+                btn.onclick = () => openNewPostPanel();
+                
+            }, (error) => showError("No se pudieron leer las publicaciones", error.message));
 
             async function seedDefaultPillars() {
                 const defaults = [
@@ -237,11 +228,11 @@
                     for (let p of defaults) {
                         await setDoc(doc(db, 'fanny_pillars', p.id), { name: p.name, color: p.color });
                     }
-                } catch(e) { showError("Error creando pilares", e.message); }
+                } catch(e) { console.error("Error creando pilares", e.message); }
             }
 
         } catch (e) {
-            showError("Error al inicializar Firebase. Revisa tu firebaseConfig.", e.message);
+            showError("Error al inicializar Firestore.", e.message);
         }
 
         // --- FUNCIONES DE UI ---
@@ -360,7 +351,6 @@
 
             const postId = 'post_' + Date.now();
             try {
-                // Escribir en la ruta limpia que configuramos en Reglas
                 await setDocFs(docFs(window.db, 'fanny_posts', postId), { title, date, format, pillarId, copy });
                 closePanel();
             } catch (e) {
