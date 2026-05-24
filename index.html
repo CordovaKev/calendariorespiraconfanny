@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario Colaborativo - Respira con Fanny</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            var(--brand): #0891b2; 
+            var(--brand-hover): #164e63;
+            var(--brand-light): #cffafe;
+            var(--brand-text): #083344;
+        }
+        body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .fade-in { animation: fadeIn 0.2s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .spinner {
+            border: 3px solid rgba(8, 145, 178, 0.1);
+            border-left-color: var(--brand, #0891b2);
+            border-radius: 50%;
+            width: 24px; height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Panel Error */
+        #error-panel { display: none; }
+    </style>
+</head>
+<body class="flex h-screen text-slate-800">
+
+    <!-- PANEL DE ERROR (Oculto por defecto) -->
+    <div id="error-panel" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative z-[100] w-[90%] max-w-2xl shadow-lg" role="alert">
+        <strong class="font-bold">Error de conexión con Firebase:</strong>
+        <span class="block sm:inline" id="error-message"></span>
+        <p class="text-sm mt-2 font-mono bg-white p-2 rounded text-red-900 border border-red-200" id="error-details"></p>
+        <button onclick="document.getElementById('error-panel').style.display='none'" class="absolute top-0 bottom-0 right-0 px-4 py-3">
+            <i data-lucide="x" class="w-4 h-4 text-red-500"></i>
+        </button>
+    </div>
+
+    <!-- 1. BARRA LATERAL -->
+    <aside class="w-[280px] h-full bg-white border-r border-slate-200 fixed left-0 top-0 flex flex-col shadow-sm z-10">
+        <div class="p-8 flex flex-col items-center border-b border-slate-100">
+            <div class="w-32 h-32 rounded-full bg-slate-100 flex items-center justify-center mb-4 shadow-inner overflow-hidden border-4 border-white shadow-md relative">
+                <img id="sidebar-logo" src="Foto Final.jpg" alt="Logo de Marca" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Fanny&background=random&size=128';">
+            </div>
+            <h1 class="text-xl font-bold text-slate-800 text-center">Respira con Fanny</h1>
+            <p class="text-xs text-slate-500 uppercase tracking-widest mt-1">Content Calendar</p>
+            <div id="sync-status" class="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
+                <div class="spinner w-3 h-3 border-2"></div> Conectando...
+            </div>
+        </div>
+
+        <div class="p-6 flex-1 flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Pilares</h2>
+            </div>
+            <ul id="sidebar-pillars" class="space-y-3 flex-1 overflow-y-auto"></ul>
+        </div>
+    </aside>
+
+    <!-- 2. ÁREA CENTRAL -->
+    <main class="h-full ml-[280px] flex-1 p-8 flex flex-col overflow-hidden">
+        <header class="flex justify-between items-center mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex-shrink-0">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="calendar-days" style="color: var(--brand, #0891b2)"></i>
+                    Planificación <span id="current-year-display">2026</span>
+                </h2>
+                <p class="text-slate-500 text-sm mt-1">Gestiona, añade y colabora en tiempo real.</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <select id="month-selector" class="bg-slate-50 border border-slate-300 text-slate-700 text-sm rounded-lg p-2.5 font-medium outline-none cursor-pointer min-w-[120px]"></select>
+                <select id="year-selector" class="bg-slate-50 border border-slate-300 text-slate-700 text-sm rounded-lg p-2.5 font-medium outline-none cursor-pointer">
+                    <option value="2026" selected>2026</option>
+                    <option value="2027">2027</option>
+                </select>
+                <!-- Botón de prueba para ver si el JS funciona independiente de Firebase -->
+                <button onclick="alert('El botón funciona. Esperando a Firebase...')" id="btn-nuevo-post" class="bg-[#0891b2] hover:bg-[#164e63] text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm ml-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Post
+                </button>
+            </div>
+        </header>
+
+        <!-- VISTA: CALENDARIO -->
+        <div id="view-calendar-container" class="flex-1 flex flex-col overflow-hidden fade-in">
+            <div class="grid grid-cols-7 gap-3 mb-2 text-center flex-shrink-0">
+                <div class="font-semibold text-slate-400 text-xs uppercase tracking-wide">Dom</div>
+                <div class="font-semibold text-slate-400 text-xs uppercase tracking-wide">Lun</div>
+                <div class="font-semibold text-slate-400 text-xs uppercase tracking-wide">Mar</div>
+                <div class="font-semibold text-slate-400 text-xs uppercase tracking-wide">Mié</div>
+                <div class="font-semibold text-slate-400 text-xs uppercase tracking-wide">Jue</div>
+                <div class="font-semibold text-slate-400 text-xs uppercase tracking-wide">Vie</div>
+                <div class="font-semibold text-slate-400 text-xs uppercase tracking-wide">Sáb</div>
+            </div>
+            <div id="calendar-grid" class="grid grid-cols-7 gap-3 flex-1 overflow-y-auto pb-8 pr-2"></div>
+        </div>
+    </main>
+
+    <!-- PANEL LATERAL (POSTS) -->
+    <div id="side-panel" class="fixed top-0 right-0 w-[450px] h-full bg-white shadow-2xl border-l border-slate-200 transform translate-x-[100%] transition-transform duration-300 ease-in-out z-50 flex flex-col">
+        <div class="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50">
+            <h3 id="panel-main-title" class="text-lg font-bold text-slate-800">Nueva Publicación</h3>
+            <button onclick="closePanel()" class="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-200 rounded-full transition-colors"><i data-lucide="x"></i></button>
+        </div>
+        <!-- MODO EDICIÓN / NUEVO -->
+        <div id="panel-edit" class="p-6 flex-1 overflow-y-auto space-y-4 bg-white">
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Título del Post</label>
+                <input type="text" id="edit-title" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-slate-800 text-sm outline-none">
+            </div>
+            <div class="flex gap-4">
+                <div class="flex-1">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Fecha</label>
+                    <input type="date" id="edit-date" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-slate-800 text-sm outline-none">
+                </div>
+                <div class="flex-1">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Formato</label>
+                    <select id="edit-format" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-slate-800 text-sm outline-none">
+                        <option value="🎥 Reel">🎥 Reel</option>
+                        <option value="🖼️ Post">🖼️ Post</option>
+                        <option value="⏳ Story">⏳ Story</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Pilar</label>
+                <select id="edit-pillar" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-slate-800 text-sm outline-none"></select>
+            </div>
+            <div class="flex flex-col">
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Copy / Texto</label>
+                <textarea id="edit-copy" rows="5" class="w-full flex-1 bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 text-slate-800 text-sm outline-none resize-none"></textarea>
+            </div>
+            <div class="pt-4 border-t border-slate-100 flex gap-3">
+                <button onclick="savePost()" class="flex-1 bg-[#0891b2] hover:bg-[#164e63] text-white py-2.5 rounded-lg text-sm font-medium transition-colors flex justify-center items-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i> Guardar en la Nube
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="panel-overlay" class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300" onclick="closePanel()"></div>
+
+    <!-- Firebase SDK (Módulos JS) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ==========================================
+        // CONFIGURACIÓN DE KEV (ACTUALIZADA)
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAFBBNcRdK6wI0bOdb6PywJ275SV9uI7XU",
+            authDomain: "calendar-rcf.firebaseapp.com",
+            projectId: "calendar-rcf",
+            storageBucket: "calendar-rcf.firebasestorage.app",
+            messagingSenderId: "611172144830",
+            appId: "1:611172144830:web:094c7e5f52b4c9d05df0ef"
+        };
+        // ==========================================
+
+        const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+        // Utilidad para mostrar errores en pantalla
+        function showError(msg, details) {
+            console.error("ERROR DETECTADO:", msg, details);
+            const panel = document.getElementById('error-panel');
+            document.getElementById('error-message').innerText = msg;
+            document.getElementById('error-details').innerText = details;
+            panel.style.display = 'block';
+            
+            const status = document.getElementById('sync-status');
+            status.innerHTML = `<i data-lucide="x-circle" class="w-3 h-3 text-red-500"></i> Error de conexión`;
+            status.classList.add('text-red-600');
+            lucide.createIcons();
+        }
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            
+            // Usaremos una ruta simple para evitar problemas de permisos de la versión anterior
+            const postsRef = collection(db, 'fanny_posts');
+            const pillarsRef = collection(db, 'fanny_pillars');
+
+            window.appState = { pillars: [], posts: [], currentEditingId: null };
+            window.db = db; // Guardar db global para la función savePost
+
+            // 1. Iniciar Sesión Anónima
+            signInAnonymously(auth).then(() => {
+                console.log("Autenticación exitosa");
+                
+                // 2. Escuchar Pilares
+                onSnapshot(pillarsRef, (snapshot) => {
+                    window.appState.pillars = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    if(window.appState.pillars.length === 0) seedDefaultPillars();
+                    renderSidebar();
+                }, (error) => showError("No se pudieron leer los pilares", error.message));
+
+                // 3. Escuchar Posts
+                onSnapshot(postsRef, (snapshot) => {
+                    window.appState.posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderCalendar();
+                    
+                    // Actualizar UI a éxito
+                    const status = document.getElementById('sync-status');
+                    status.innerHTML = `<i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-500"></i> Conectado`;
+                    status.classList.remove('text-red-600');
+                    status.classList.add('text-emerald-600');
+                    lucide.createIcons();
+                    
+                    // Activar el botón de Nuevo Post
+                    const btn = document.getElementById('btn-nuevo-post');
+                    btn.onclick = () => openNewPostPanel();
+                    
+                }, (error) => showError("No se pudieron leer las publicaciones", error.message));
+
+            }).catch((error) => {
+                showError("Falló la autenticación con Firebase", error.message);
+            });
+
+            async function seedDefaultPillars() {
+                const defaults = [
+                    { id: 'pil_1', name: 'Identidad', color: '#FBBF24' },
+                    { id: 'pil_2', name: 'Educación', color: '#3B82F6' },
+                    { id: 'pil_3', name: 'Performance', color: '#A855F7' }
+                ];
+                try {
+                    for (let p of defaults) {
+                        await setDoc(doc(db, 'fanny_pillars', p.id), { name: p.name, color: p.color });
+                    }
+                } catch(e) { showError("Error creando pilares", e.message); }
+            }
+
+        } catch (e) {
+            showError("Error al inicializar Firebase. Revisa tu firebaseConfig.", e.message);
+        }
+
+        // --- FUNCIONES DE UI ---
+        function initMonthSelector() {
+            const select = document.getElementById('month-selector');
+            select.innerHTML = '';
+            mesesNombres.forEach((mes, index) => {
+                const opt = document.createElement('option');
+                opt.value = index; opt.text = mes;
+                select.appendChild(opt);
+            });
+            select.value = "5"; // Junio por defecto
+            select.addEventListener('change', renderCalendar);
+            document.getElementById('year-selector').addEventListener('change', renderCalendar);
+        }
+
+        window.renderSidebar = function() {
+            const list = document.getElementById('sidebar-pillars');
+            list.innerHTML = '';
+            const select = document.getElementById('edit-pillar');
+            select.innerHTML = '';
+            
+            window.appState.pillars.forEach(pillar => {
+                list.innerHTML += `
+                    <li class="flex items-center gap-3 fade-in">
+                        <span class="w-4 h-4 rounded-full shadow-sm" style="background-color: ${pillar.color}"></span>
+                        <span class="font-medium text-slate-700 text-sm">${pillar.name}</span>
+                    </li>
+                `;
+                select.innerHTML += `<option value="${pillar.id}">${pillar.name}</option>`;
+            });
+        }
+
+        window.renderCalendar = function() {
+            const year = parseInt(document.getElementById('year-selector').value);
+            const month = parseInt(document.getElementById('month-selector').value);
+            const calendarGrid = document.getElementById('calendar-grid');
+            calendarGrid.innerHTML = '';
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDayIndex = firstDay.getDay();
+            const totalDays = lastDay.getDate();
+
+            for (let i = 0; i < startDayIndex; i++) {
+                calendarGrid.innerHTML += `<div class="bg-transparent rounded-xl border border-dashed border-slate-200 min-h-[140px] opacity-50"></div>`;
+            }
+
+            for (let day = 1; day <= totalDays; day++) {
+                const currentDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayPosts = window.appState.posts.filter(p => p.date === currentDateStr);
+
+                const cell = document.createElement('div');
+                cell.className = `relative min-h-[140px] bg-white border border-slate-200 rounded-xl p-2 transition-all flex flex-col`;
+                
+                cell.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="font-semibold text-slate-500 text-sm">${day}</span>
+                    </div>
+                `;
+
+                const postsContainer = document.createElement('div');
+                postsContainer.className = 'flex flex-col gap-2 flex-1';
+
+                dayPosts.forEach(post => {
+                    const pillar = window.appState.pillars.find(p => p.id === post.pillarId) || {color: '#ccc'};
+                    const postEl = document.createElement('div');
+                    postEl.className = 'rounded-lg p-2.5 shadow-sm border border-black/5 fade-in';
+                    postEl.style.backgroundColor = pillar.color;
+                    postEl.innerHTML = `
+                        <p class="text-[10px] font-bold text-white mb-1">${post.format}</p>
+                        <p class="text-xs font-semibold leading-tight line-clamp-2 text-white">${post.title}</p>
+                    `;
+                    postsContainer.appendChild(postEl);
+                });
+
+                cell.appendChild(postsContainer);
+                calendarGrid.appendChild(cell);
+            }
+            lucide.createIcons();
+        }
+
+        // --- PANEL CONTROL ---
+        const sidePanel = document.getElementById('side-panel');
+        const panelOverlay = document.getElementById('panel-overlay');
+
+        window.openNewPostPanel = function() {
+            const mSelect = document.getElementById('month-selector').value;
+            const ySelect = document.getElementById('year-selector').value;
+            document.getElementById('edit-title').value = '';
+            document.getElementById('edit-date').value = `${ySelect}-${String(parseInt(mSelect)+1).padStart(2,'0')}-01`;
+            document.getElementById('edit-copy').value = '';
+            
+            sidePanel.classList.remove('translate-x-[100%]');
+            panelOverlay.classList.remove('hidden');
+            setTimeout(() => panelOverlay.classList.remove('opacity-0'), 10);
+        }
+
+        window.closePanel = function() {
+            sidePanel.classList.add('translate-x-[100%]');
+            panelOverlay.classList.add('opacity-0');
+            setTimeout(() => panelOverlay.classList.add('hidden'), 300);
+        }
+
+        // --- GUARDAR EN FIREBASE ---
+        import { doc as docFs, setDoc as setDocFs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        window.savePost = async function() {
+            const title = document.getElementById('edit-title').value.trim();
+            const date = document.getElementById('edit-date').value;
+            const format = document.getElementById('edit-format').value;
+            const pillarId = document.getElementById('edit-pillar').value;
+            const copy = document.getElementById('edit-copy').value.trim();
+
+            if (!title || !date) return alert("Ingresa un título y fecha");
+
+            const postId = 'post_' + Date.now();
+            try {
+                // Escribir en la ruta limpia que configuramos en Reglas
+                await setDocFs(docFs(window.db, 'fanny_posts', postId), { title, date, format, pillarId, copy });
+                closePanel();
+            } catch (e) {
+                showError("No se pudo guardar", e.message);
+            }
+        }
+
+        initMonthSelector();
+        lucide.createIcons();
+    </script>
+</body>
+</html>
