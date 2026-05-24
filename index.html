@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendario Colaborativo - Respira con Fanny</title>
+    <title>Calendario Respira con Fanny</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            var(--brand): #0891b2; 
-            var(--brand-hover): #164e63;
-            var(--brand-light): #cffafe;
-            var(--brand-text): #083344;
+            --brand: #0891b2; 
+            --brand-hover: #164e63;
+            --brand-light: #cffafe;
+            --brand-text: #083344;
         }
         body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
         ::-webkit-scrollbar { width: 6px; }
@@ -23,7 +23,7 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .spinner {
             border: 3px solid rgba(8, 145, 178, 0.1);
-            border-left-color: var(--brand, #0891b2);
+            border-left-color: var(--brand);
             border-radius: 50%;
             width: 24px; height: 24px;
             animation: spin 1s linear infinite;
@@ -37,7 +37,7 @@
 
     <!-- PANEL DE ERROR (Oculto por defecto) -->
     <div id="error-panel" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative z-[100] w-[90%] max-w-2xl shadow-lg" role="alert">
-        <strong class="font-bold">Error de conexión con Firebase:</strong>
+        <strong class="font-bold">Aviso del Sistema:</strong>
         <span class="block sm:inline" id="error-message"></span>
         <p class="text-sm mt-2 font-mono bg-white p-2 rounded text-red-900 border border-red-200" id="error-details"></p>
         <button onclick="document.getElementById('error-panel').style.display='none'" class="absolute top-0 bottom-0 right-0 px-4 py-3">
@@ -54,13 +54,13 @@
             <h1 class="text-xl font-bold text-slate-800 text-center">Respira con Fanny</h1>
             <p class="text-xs text-slate-500 uppercase tracking-widest mt-1">Content Calendar</p>
             <div id="sync-status" class="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
-                <div class="spinner w-3 h-3 border-2"></div> Conectando directo...
+                <div class="spinner w-3 h-3 border-2"></div> Sincronizando BD...
             </div>
         </div>
 
         <div class="p-6 flex-1 flex flex-col">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Pilares</h2>
+                <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Pilares Estratégicos</h2>
             </div>
             <ul id="sidebar-pillars" class="space-y-3 flex-1 overflow-y-auto"></ul>
         </div>
@@ -71,10 +71,10 @@
         <header class="flex justify-between items-center mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex-shrink-0">
             <div>
                 <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    <i data-lucide="calendar-days" style="color: var(--brand, #0891b2)"></i>
+                    <i data-lucide="calendar-days" style="color: var(--brand)"></i>
                     Planificación <span id="current-year-display">2026</span>
                 </h2>
-                <p class="text-slate-500 text-sm mt-1">Gestiona, añade y colabora en tiempo real.</p>
+                <p class="text-slate-500 text-sm mt-1">Sincronización en tiempo real habilitada.</p>
             </div>
             <div class="flex items-center gap-4">
                 <select id="month-selector" class="bg-slate-50 border border-slate-300 text-slate-700 text-sm rounded-lg p-2.5 font-medium outline-none cursor-pointer min-w-[120px]"></select>
@@ -83,8 +83,8 @@
                     <option value="2027">2027</option>
                 </select>
                 <!-- Botón de prueba para ver si el JS funciona independiente de Firebase -->
-                <button onclick="alert('Conectando a base de datos... un momento')" id="btn-nuevo-post" class="bg-[#0891b2] hover:bg-[#164e63] text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm ml-2">
-                    <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Post
+                <button onclick="alert('Espera a que cargue la base de datos...')" id="btn-nuevo-post" class="bg-slate-300 text-slate-500 cursor-not-allowed px-5 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm ml-2">
+                    <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Cargando
                 </button>
             </div>
         </header>
@@ -127,6 +127,7 @@
                         <option value="🎥 Reel">🎥 Reel</option>
                         <option value="🖼️ Post">🖼️ Post</option>
                         <option value="⏳ Story">⏳ Story</option>
+                        <option value="🎠 Carrusel">🎠 Carrusel</option>
                     </select>
                 </div>
             </div>
@@ -136,7 +137,7 @@
             </div>
             <div class="flex flex-col">
                 <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Copy / Texto</label>
-                <textarea id="edit-copy" rows="5" class="w-full flex-1 bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 text-slate-800 text-sm outline-none resize-none"></textarea>
+                <textarea id="edit-copy" rows="8" class="w-full flex-1 bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 text-slate-800 text-sm outline-none resize-none"></textarea>
             </div>
             <div class="pt-4 border-t border-slate-100 flex gap-3">
                 <button onclick="savePost()" class="flex-1 bg-[#0891b2] hover:bg-[#164e63] text-white py-2.5 rounded-lg text-sm font-medium transition-colors flex justify-center items-center gap-2">
@@ -147,14 +148,14 @@
     </div>
     <div id="panel-overlay" class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300" onclick="closePanel()"></div>
 
-    <!-- Firebase SDK (Módulos JS) - SIN AUTH -->
+    <!-- Firebase SDK (Módulos JS) - Con fallback automático -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        // Eliminamos firebase-auth porque nos conectaremos directo a Firestore
-        import { getFirestore, collection, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ==========================================
-        // CONFIGURACIÓN DE KEV
+        // CONFIGURACIÓN OFICIAL DE KEV
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyAFBBNcRdK6wI0bOdb6PywJ275SV9uI7XU",
@@ -176,47 +177,65 @@
             panel.style.display = 'block';
             
             const status = document.getElementById('sync-status');
-            status.innerHTML = `<i data-lucide="x-circle" class="w-3 h-3 text-red-500"></i> Error de conexión`;
+            status.innerHTML = `<i data-lucide="x-circle" class="w-3 h-3 text-red-500"></i> Fallo general de DB`;
             status.classList.add('text-red-600');
             lucide.createIcons();
         }
 
         try {
+            // Inicializar servicios
             const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
             const db = getFirestore(app);
             
-            const postsRef = collection(db, 'fanny_posts');
-            const pillarsRef = collection(db, 'fanny_pillars');
+            // Rutas recomendadas para asegurar total estabilidad de la BD
+            const basePath = ['artifacts', 'calendar-rcf', 'public', 'data'];
+            const postsRef = collection(db, ...basePath, 'posts');
+            const pillarsRef = collection(db, ...basePath, 'pillars');
 
             window.appState = { pillars: [], posts: [], currentEditingId: null };
             window.db = db; 
 
-            console.log("Conectando directo a Firestore sin Auth...");
-            
-            // 1. Escuchar Pilares Directamente
-            onSnapshot(pillarsRef, (snapshot) => {
-                window.appState.pillars = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if(window.appState.pillars.length === 0) seedDefaultPillars();
-                renderSidebar();
-            }, (error) => showError("No se pudieron leer los pilares", error.message));
+            async function iniciarSistema() {
+                try {
+                    // Intenta conectar a Auth. Si falla por caché o demoras de Google,
+                    // el sistema lo atrapa y continúa conectando la Base de Datos directamente.
+                    await signInAnonymously(auth);
+                } catch (authError) {
+                    console.warn("Aviso: El módulo de Autenticación aún se está configurando en Google. Conectando a Base de Datos directa vía Reglas.");
+                }
 
-            // 2. Escuchar Posts Directamente
-            onSnapshot(postsRef, (snapshot) => {
-                window.appState.posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderCalendar();
-                
-                // Actualizar UI a éxito
-                const status = document.getElementById('sync-status');
-                status.innerHTML = `<i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-500"></i> Conectado`;
-                status.classList.remove('text-red-600');
-                status.classList.add('text-emerald-600');
-                lucide.createIcons();
-                
-                // Activar el botón de Nuevo Post
-                const btn = document.getElementById('btn-nuevo-post');
-                btn.onclick = () => openNewPostPanel();
-                
-            }, (error) => showError("No se pudieron leer las publicaciones", error.message));
+                // 1. Escuchar Pilares 
+                onSnapshot(pillarsRef, (snapshot) => {
+                    window.appState.pillars = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    if(window.appState.pillars.length === 0) seedDefaultPillars();
+                    renderSidebar();
+                }, (error) => showError("No se pudieron leer los pilares", error.message));
+
+                // 2. Escuchar Posts y Activar Interfaz
+                onSnapshot(postsRef, (snapshot) => {
+                    window.appState.posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderCalendar();
+                    
+                    // Actualizar UI a éxito
+                    const status = document.getElementById('sync-status');
+                    status.innerHTML = `<i data-lucide="check-circle-2" class="w-3 h-3 text-emerald-500"></i> Conectado y Sincronizado`;
+                    status.classList.remove('text-red-600', 'text-slate-400');
+                    status.classList.add('text-emerald-600');
+                    lucide.createIcons();
+                    
+                    // Activar el botón de Nuevo Post
+                    const btn = document.getElementById('btn-nuevo-post');
+                    btn.className = "bg-[#0891b2] hover:bg-[#164e63] text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm ml-2 cursor-pointer";
+                    btn.innerHTML = `<i data-lucide="plus" class="w-4 h-4"></i> Nuevo Post`;
+                    btn.onclick = () => openNewPostPanel();
+                    lucide.createIcons();
+                    
+                }, (error) => showError("No se pudieron leer las publicaciones", error.message));
+            }
+
+            // Ejecutar el motor
+            iniciarSistema();
 
             async function seedDefaultPillars() {
                 const defaults = [
@@ -226,13 +245,13 @@
                 ];
                 try {
                     for (let p of defaults) {
-                        await setDoc(doc(db, 'fanny_pillars', p.id), { name: p.name, color: p.color });
+                        await setDoc(doc(db, ...basePath, 'pillars', p.id), { name: p.name, color: p.color });
                     }
                 } catch(e) { console.error("Error creando pilares", e.message); }
             }
 
         } catch (e) {
-            showError("Error al inicializar Firestore.", e.message);
+            showError("Error Crítico al inicializar la App.", e.message);
         }
 
         // --- FUNCIONES DE UI ---
@@ -266,6 +285,16 @@
             });
         }
 
+        function getContrastYIQ(hexcolor){
+            hexcolor = hexcolor.replace("#", "");
+            if(hexcolor.length === 3) hexcolor = hexcolor[0]+hexcolor[0]+hexcolor[1]+hexcolor[1]+hexcolor[2]+hexcolor[2];
+            var r = parseInt(hexcolor.substr(0,2),16);
+            var g = parseInt(hexcolor.substr(2,2),16);
+            var b = parseInt(hexcolor.substr(4,2),16);
+            var yiq = ((r*299)+(g*587)+(b*114))/1000;
+            return (yiq >= 128) ? 'text-slate-800' : 'text-white';
+        }
+
         window.renderCalendar = function() {
             const year = parseInt(document.getElementById('year-selector').value);
             const month = parseInt(document.getElementById('month-selector').value);
@@ -286,11 +315,14 @@
                 const dayPosts = window.appState.posts.filter(p => p.date === currentDateStr);
 
                 const cell = document.createElement('div');
-                cell.className = `relative min-h-[140px] bg-white border border-slate-200 rounded-xl p-2 transition-all flex flex-col`;
+                cell.className = `relative min-h-[140px] bg-white border border-slate-200 rounded-xl p-2 transition-all flex flex-col hover:border-[#0891b2] group`;
                 
                 cell.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                         <span class="font-semibold text-slate-500 text-sm">${day}</span>
+                        <button onclick="openNewPostPanel('${currentDateStr}')" class="opacity-0 group-hover:opacity-100 text-[#0891b2] hover:bg-[#cffafe] p-1 rounded transition-all" title="Añadir Post en este día">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                        </button>
                     </div>
                 `;
 
@@ -298,13 +330,21 @@
                 postsContainer.className = 'flex flex-col gap-2 flex-1';
 
                 dayPosts.forEach(post => {
-                    const pillar = window.appState.pillars.find(p => p.id === post.pillarId) || {color: '#ccc'};
+                    const pillar = window.appState.pillars.find(p => p.id === post.pillarId) || {color: '#94a3b8'};
+                    const textColor = getContrastYIQ(pillar.color);
+                    
                     const postEl = document.createElement('div');
-                    postEl.className = 'rounded-lg p-2.5 shadow-sm border border-black/5 fade-in';
+                    postEl.className = 'cursor-pointer rounded-lg p-2.5 shadow-sm border border-black/5 hover:-translate-y-0.5 transition-transform fade-in';
                     postEl.style.backgroundColor = pillar.color;
+                    
+                    // Al hacer clic, editaremos
+                    postEl.onclick = () => openEditPostPanel(post.id);
+
                     postEl.innerHTML = `
-                        <p class="text-[10px] font-bold text-white mb-1">${post.format}</p>
-                        <p class="text-xs font-semibold leading-tight line-clamp-2 text-white">${post.title}</p>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-sm bg-black/10 ${textColor}">${post.format}</span>
+                        </div>
+                        <p class="text-xs font-semibold leading-tight line-clamp-2 ${textColor}">${post.title}</p>
                     `;
                     postsContainer.appendChild(postEl);
                 });
@@ -319,12 +359,31 @@
         const sidePanel = document.getElementById('side-panel');
         const panelOverlay = document.getElementById('panel-overlay');
 
-        window.openNewPostPanel = function() {
+        window.openNewPostPanel = function(prefilledDate = '') {
+            window.appState.currentEditingId = null;
             const mSelect = document.getElementById('month-selector').value;
             const ySelect = document.getElementById('year-selector').value;
+            
+            document.getElementById('panel-main-title').innerText = "Nueva Publicación";
             document.getElementById('edit-title').value = '';
-            document.getElementById('edit-date').value = `${ySelect}-${String(parseInt(mSelect)+1).padStart(2,'0')}-01`;
+            document.getElementById('edit-date').value = prefilledDate || `${ySelect}-${String(parseInt(mSelect)+1).padStart(2,'0')}-01`;
             document.getElementById('edit-copy').value = '';
+            
+            sidePanel.classList.remove('translate-x-[100%]');
+            panelOverlay.classList.remove('hidden');
+            setTimeout(() => panelOverlay.classList.remove('opacity-0'), 10);
+        }
+
+        window.openEditPostPanel = function(postId) {
+            window.appState.currentEditingId = postId;
+            const post = window.appState.posts.find(p => p.id === postId);
+            
+            document.getElementById('panel-main-title').innerText = "Editar Publicación";
+            document.getElementById('edit-title').value = post.title;
+            document.getElementById('edit-date').value = post.date;
+            document.getElementById('edit-format').value = post.format;
+            document.getElementById('edit-pillar').value = post.pillarId;
+            document.getElementById('edit-copy').value = post.copy || '';
             
             sidePanel.classList.remove('translate-x-[100%]');
             panelOverlay.classList.remove('hidden');
@@ -335,11 +394,10 @@
             sidePanel.classList.add('translate-x-[100%]');
             panelOverlay.classList.add('opacity-0');
             setTimeout(() => panelOverlay.classList.add('hidden'), 300);
+            window.appState.currentEditingId = null;
         }
 
         // --- GUARDAR EN FIREBASE ---
-        import { doc as docFs, setDoc as setDocFs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
         window.savePost = async function() {
             const title = document.getElementById('edit-title').value.trim();
             const date = document.getElementById('edit-date').value;
@@ -347,14 +405,17 @@
             const pillarId = document.getElementById('edit-pillar').value;
             const copy = document.getElementById('edit-copy').value.trim();
 
-            if (!title || !date) return alert("Ingresa un título y fecha");
+            if (!title || !date) return alert("Ingresa un título y una fecha.");
 
-            const postId = 'post_' + Date.now();
+            // Si existe currentEditingId lo usamos (edición), si no creamos nuevo
+            const postId = window.appState.currentEditingId || ('post_' + Date.now());
+            
             try {
-                await setDocFs(docFs(window.db, 'fanny_posts', postId), { title, date, format, pillarId, copy });
+                const basePath = ['artifacts', 'calendar-rcf', 'public', 'data'];
+                await setDoc(doc(window.db, ...basePath, 'posts', postId), { title, date, format, pillarId, copy });
                 closePanel();
             } catch (e) {
-                showError("No se pudo guardar", e.message);
+                showError("No se pudo guardar la publicación", e.message);
             }
         }
 
